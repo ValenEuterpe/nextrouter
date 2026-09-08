@@ -1259,14 +1259,14 @@ export function renderDashboardPage() {
         else if (pct > 70) progressClass = 'warning';
 
         const keyCell = k.rawKey
-          ? '<div style="display: flex; align-items: center; gap: 8px;">' +
-            '<code class="mono" style="color: #67e8f9; font-size: 0.82rem; background: rgba(0,242,254,0.06); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(0,242,254,0.2);">' +
-            escapeHtml(k.rawKey.slice(0, 7)) + '...' + escapeHtml(k.rawKey.slice(-4)) +
-            '</code>' +
-            '<button class="btn btn-secondary btn-sm" style="padding: 3px 8px; font-size: 0.74rem;" onclick="copySpecificKey(\'' + escapeHtml(k.rawKey) + '\')" title="Copy Key">' +
-            '📋 Copy' +
-            '</button>' +
-            '</div>'
+          ? \`<div style="display: flex; align-items: center; gap: 8px;">
+              <code class="mono" style="color: #67e8f9; font-size: 0.82rem; background: rgba(0,242,254,0.06); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(0,242,254,0.2);">
+                \${escapeHtml(k.rawKey.slice(0, 7))}...\${escapeHtml(k.rawKey.slice(-4))}
+              </code>
+              <button class="btn btn-secondary btn-sm" style="padding: 3px 8px; font-size: 0.74rem;" data-key="\${escapeHtml(k.rawKey)}" onclick="copySpecificKey(this.dataset.key)" title="Copy Key">
+                📋 Copy
+              </button>
+            </div>\`
           : '<span class="mono" style="color: var(--text-dim); font-size: 0.8rem;">Hidden</span>';
 
         return \`
