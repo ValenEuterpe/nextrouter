@@ -181,26 +181,36 @@ export default {
       });
     }
 
-    // 6. Public AI Proxy Routes: /:prefix/v1/...
-    // Matches /:prefix/v1/models or /:prefix/models
+    // 6. Generic OpenAI Proxy Routes: /v1/models and /v1/chat/completions (for Janitor.ai, etc.)
+    if ((pathname === '/v1/models' || pathname === '/models') && method === 'GET') {
+      return handleModelsRequest(request, env, null);
+    }
+    if ((pathname === '/v1/chat/completions' || pathname === '/chat/completions') && method === 'POST') {
+      return handleChatCompletions(request, env, ctx, null);
+    }
+
+    // 7. Channel-prefixed AI Proxy Routes: /:prefix/v1/...
     const modelsMatch = pathname.match(/^\/([a-zA-Z0-9_-]+)(?:\/v1)?\/models\/?$/);
     if (modelsMatch && method === 'GET') {
       const prefix = modelsMatch[1];
-      return handleModelsRequest(request, env, prefix);
+      if (prefix !== 'v1') {
+        return handleModelsRequest(request, env, prefix);
+      }
     }
 
-    // Matches /:prefix/v1/chat/completions or /:prefix/chat/completions
     const chatMatch = pathname.match(/^\/([a-zA-Z0-9_-]+)(?:\/v1)?\/chat\/completions\/?$/);
     if (chatMatch && method === 'POST') {
       const prefix = chatMatch[1];
-      return handleChatCompletions(request, env, ctx, prefix);
+      if (prefix !== 'v1') {
+        return handleChatCompletions(request, env, ctx, prefix);
+      }
     }
 
     // Fallback 404
     return new Response(
       JSON.stringify({
         error: {
-          message: `Endpoint '${pathname}' not found. Did you specify a valid channel prefix like /<channel>/v1/chat/completions?`,
+          message: `Endpoint '${pathname}' not found. Standard OpenAI endpoints available at /v1/chat/completions and /v1/models`,
           type: 'invalid_request_error',
         },
       }),

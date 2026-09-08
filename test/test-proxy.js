@@ -204,6 +204,15 @@ async function runTests() {
   assert.strictEqual(modelsData.data.length, 2);
   assert.strictEqual(modelsData.data[0].id, 'gpt-4o');
 
+  // Generic /v1/models (used by Janitor.ai, etc.)
+  const genericModelsRes = await worker.fetch(new Request('https://proxy.workers.dev/v1/models', {
+    headers: { 'Authorization': `Bearer ${activeRawKey}` },
+  }), env, ctx);
+  assert.strictEqual(genericModelsRes.status, 200, 'Generic /v1/models should return 200');
+  const genericData = await genericModelsRes.json();
+  assert.strictEqual(genericData.object, 'list');
+  assert.strictEqual(genericData.data.length, 2);
+
   console.log('✅ All Unit & Integration Tests Passed Successfully!');
 }
 

@@ -208,6 +208,7 @@ export async function handleCreateKey(request, env) {
     tokensUsed: 0,
     channelPrefix: channelPrefix || '*',
     revoked: false,
+    rawKey,
     createdAt: new Date().toISOString(),
   };
 

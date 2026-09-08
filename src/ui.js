@@ -915,10 +915,26 @@ export function renderDashboardPage() {
       <div class="view-header">
         <div>
           <h2 class="view-title">Client API Keys & Quotas</h2>
-          <p class="view-desc">Issue scoped OpenAI-compatible client keys with per-key token limits (e.g. 2M tokens).</p>
+          <p class="view-desc">Issue client API keys with token limits. Standard OpenAI format for Janitor.ai, SillyTavern, LibreChat, and SDKs.</p>
         </div>
         <button class="btn" onclick="openKeyModal()">
           <span>+ Create New Key</span>
+        </button>
+      </div>
+
+      <!-- Generic Base URL Banner for Janitor.ai & Other Clients -->
+      <div style="background: rgba(14, 22, 44, 0.8); border: 1px solid var(--cyan); border-radius: 14px; padding: 1.25rem 1.6rem; margin-bottom: 1.8rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; box-shadow: 0 0 25px rgba(0, 242, 254, 0.1);">
+        <div>
+          <div style="font-size: 0.78rem; font-weight: 800; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 1rem;">🌐</span> Standard OpenAI Base URL (Janitor.ai, SillyTavern, NextChat)
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+            Provide this Base URL and your API Key to any OpenAI-compatible app:
+          </div>
+          <code class="mono" id="appBaseUrlDisplay" style="color: #67e8f9; background: #060914; padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(0, 242, 254, 0.3); font-size: 0.95rem; font-weight: 700;">https://.../v1</code>
+        </div>
+        <button class="btn btn-secondary" onclick="copyAppBaseUrl()" style="white-space: nowrap;">
+          📋 Copy Base URL
         </button>
       </div>
 
@@ -927,6 +943,7 @@ export function renderDashboardPage() {
           <thead>
             <tr>
               <th>Owner / Description</th>
+              <th>API Key</th>
               <th>Channel Scope</th>
               <th>Token Quota / Usage</th>
               <th>Status</th>
@@ -935,7 +952,7 @@ export function renderDashboardPage() {
             </tr>
           </thead>
           <tbody id="keysTableBody">
-            <tr><td colspan="6" class="empty-state">Loading keys...</td></tr>
+            <tr><td colspan="7" class="empty-state">Loading keys...</td></tr>
           </tbody>
         </table>
       </div>
@@ -952,24 +969,22 @@ export function renderDashboardPage() {
       <div class="modal-body">
         <div class="form-group">
           <label>Channel Name / Route Prefix</label>
-          <input type="text" id="channelPrefixInput" placeholder="e.g. forest, op, gpt4, groq" />
-          <div class="helper-text">This forms your proxy endpoint: <span class="mono">/:prefix/v1/chat/completions</span></div>
+          <input type="text" id="channelPrefixInput" placeholder="e.g. openai, openrouter, claude, op" />
+          <div class="helper-text">Target prefix (e.g. <span class="mono">/:prefix/v1/chat/completions</span>) or route automatically via generic <span class="mono">/v1/chat/completions</span></div>
         </div>
 
         <div class="form-group">
           <label>Quick Provider Presets</label>
           <div class="chips-group">
-            <span class="chip highlight" onclick="applyPreset('forest')">🌲 The Forest Proxy</span>
-            <span class="chip" onclick="applyPreset('openai')">OpenAI</span>
+            <span class="chip highlight" onclick="applyPreset('openai')">OpenAI</span>
             <span class="chip" onclick="applyPreset('openrouter')">OpenRouter</span>
-            <span class="chip" onclick="applyPreset('deepseek')">DeepSeek</span>
-            <span class="chip" onclick="applyPreset('groq')">Groq</span>
+            <span class="chip" onclick="applyPreset('claude')">Claude (Anthropic)</span>
           </div>
         </div>
 
         <div class="form-group">
           <label>OpenAI-Compatible Base URL</label>
-          <input type="url" id="channelUrlInput" placeholder="https://theforestproxy.pages.dev/v1" />
+          <input type="url" id="channelUrlInput" placeholder="https://api.openai.com/v1" />
         </div>
 
         <div class="form-group">
@@ -1231,7 +1246,7 @@ export function renderDashboardPage() {
     function renderKeysTable() {
       const tbody = document.getElementById('keysTableBody');
       if (state.keys.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No API keys generated yet. Click "+ Create New Key" to issue a client key.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No API keys generated yet. Click "+ Create New Key" to issue a client key.</td></tr>';
         return;
       }
 
@@ -1243,9 +1258,21 @@ export function renderDashboardPage() {
         if (pct > 90) progressClass = 'danger';
         else if (pct > 70) progressClass = 'warning';
 
+        const keyCell = k.rawKey
+          ? '<div style="display: flex; align-items: center; gap: 8px;">' +
+            '<code class="mono" style="color: #67e8f9; font-size: 0.82rem; background: rgba(0,242,254,0.06); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(0,242,254,0.2);">' +
+            escapeHtml(k.rawKey.slice(0, 7)) + '...' + escapeHtml(k.rawKey.slice(-4)) +
+            '</code>' +
+            '<button class="btn btn-secondary btn-sm" style="padding: 3px 8px; font-size: 0.74rem;" onclick="copySpecificKey(\'' + escapeHtml(k.rawKey) + '\')" title="Copy Key">' +
+            '📋 Copy' +
+            '</button>' +
+            '</div>'
+          : '<span class="mono" style="color: var(--text-dim); font-size: 0.8rem;">Hidden</span>';
+
         return \`
           <tr style="\${k.revoked ? 'opacity: 0.45;' : ''}">
             <td><strong style="color: #f1f5f9;">\${escapeHtml(k.owner)}</strong></td>
+            <td>\${keyCell}</td>
             <td>
               <span class="badge-pill badge-channel">\${k.channelPrefix || '*'}</span>
             </td>
@@ -1294,7 +1321,7 @@ export function renderDashboardPage() {
         document.getElementById('channelUrlInput').value = c ? c.openaiUrl : '';
         document.getElementById('channelKeyInput').value = '';
       } else {
-        document.getElementById('channelUrlInput').value = 'https://theforestproxy.pages.dev/v1';
+        document.getElementById('channelUrlInput').value = 'https://api.openai.com/v1';
         document.getElementById('channelPrefixInput').value = '';
         document.getElementById('channelKeyInput').value = '';
       }
@@ -1307,11 +1334,9 @@ export function renderDashboardPage() {
 
     function applyPreset(provider) {
       const presets = {
-        forest: { url: 'https://theforestproxy.pages.dev/v1', prefix: 'forest' },
         openai: { url: 'https://api.openai.com/v1', prefix: 'openai' },
         openrouter: { url: 'https://openrouter.ai/api/v1', prefix: 'openrouter' },
-        deepseek: { url: 'https://api.deepseek.com/v1', prefix: 'deepseek' },
-        groq: { url: 'https://api.groq.com/openai/v1', prefix: 'groq' }
+        claude: { url: 'https://api.anthropic.com/v1', prefix: 'claude' }
       };
       if (presets[provider]) {
         document.getElementById('channelUrlInput').value = presets[provider].url;
@@ -1489,8 +1514,8 @@ export function renderDashboardPage() {
         
         // Display raw key modal
         document.getElementById('rawKeyDisplay').textContent = data.rawKey;
-        const baseEndpoint = location.origin + (channelPrefix === '*' ? '/<channel-name>' : '/' + channelPrefix);
-        document.getElementById('proxyUrlDisplay').textContent = baseEndpoint;
+        const genericBaseEndpoint = location.origin + '/v1';
+        document.getElementById('proxyUrlDisplay').textContent = genericBaseEndpoint;
         openModal('keyResultModal');
 
         await loadAllData();
@@ -1503,6 +1528,20 @@ export function renderDashboardPage() {
       const key = document.getElementById('rawKeyDisplay').textContent;
       navigator.clipboard.writeText(key).then(() => {
         showToast('⚡ API Key copied to clipboard!');
+      });
+    }
+
+    function copySpecificKey(key) {
+      if (!key) return;
+      navigator.clipboard.writeText(key).then(() => {
+        showToast('⚡ API Key copied to clipboard!');
+      });
+    }
+
+    function copyAppBaseUrl() {
+      const url = location.origin + '/v1';
+      navigator.clipboard.writeText(url).then(() => {
+        showToast('🌐 Generic Base URL copied: ' + url);
       });
     }
 
@@ -1558,6 +1597,8 @@ export function renderDashboardPage() {
 
     // Initialize
     window.addEventListener('DOMContentLoaded', () => {
+      const baseUrlEl = document.getElementById('appBaseUrlDisplay');
+      if (baseUrlEl) baseUrlEl.textContent = location.origin + '/v1';
       const hash = location.hash.replace('#', '');
       if (hash === 'keys') switchTab('keys');
       loadAllData();

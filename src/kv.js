@@ -77,6 +77,7 @@ export async function listKeys(kv) {
           tokenLimit: fullRecord.tokenLimit,
           tokensUsed: fullRecord.tokensUsed || 0,
           revoked: fullRecord.revoked || false,
+          rawKey: fullRecord.rawKey || item.rawKey || null,
           createdAt: fullRecord.createdAt,
         };
       }
@@ -106,6 +107,7 @@ export async function createKey(kv, keyData, hash) {
     tokenLimit: keyData.tokenLimit,
     tokensUsed: 0,
     revoked: false,
+    rawKey: keyData.rawKey || null,
     createdAt: keyData.createdAt,
   });
 

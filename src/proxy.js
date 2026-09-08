@@ -1,5 +1,5 @@
 import { sha256 } from './crypto.js';
-import { getChannel, getKeyByHash, incrementTokenUsage } from './kv.js';
+import { getChannel, getKeyByHash, incrementTokenUsage, listChannels } from './kv.js';
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -82,8 +82,9 @@ async function authenticateClient(request, kv, channelPrefix) {
     };
   }
 
-  // Check channel scope (allow specific channel or '*' for all channels)
+  // Check channel scope (only when explicit channelPrefix was targeted)
   if (
+    channelPrefix &&
     keyRecord.channelPrefix &&
     keyRecord.channelPrefix !== '*' &&
     keyRecord.channelPrefix !== channelPrefix
@@ -124,31 +125,50 @@ async function authenticateClient(request, kv, channelPrefix) {
 }
 
 /**
- * Handle GET /:prefix/v1/models
+ * Handle GET /v1/models or GET /:prefix/v1/models
  */
-export async function handleModelsRequest(request, env, prefix) {
+export async function handleModelsRequest(request, env, prefix = null) {
   const auth = await authenticateClient(request, env.KV, prefix);
   if (auth.error) return auth.error;
 
-  const channel = await getChannel(env.KV, prefix);
-  if (!channel) {
-    return jsonResponse(
-      {
-        error: {
-          message: `Channel '${prefix}' does not exist`,
-          type: 'invalid_request_error',
+  const { keyRecord } = auth;
+  let exposedModels = [];
+
+  if (prefix) {
+    const channel = await getChannel(env.KV, prefix);
+    if (!channel) {
+      return jsonResponse(
+        {
+          error: {
+            message: `Channel '${prefix}' does not exist`,
+            type: 'invalid_request_error',
+          },
         },
-      },
-      404
-    );
+        404
+      );
+    }
+    exposedModels = Array.isArray(channel.models) ? channel.models : [];
+  } else if (keyRecord.channelPrefix && keyRecord.channelPrefix !== '*') {
+    // Scoped key on generic /v1/models
+    const channel = await getChannel(env.KV, keyRecord.channelPrefix);
+    exposedModels = (channel && Array.isArray(channel.models)) ? channel.models : [];
+  } else {
+    // Global key on generic /v1/models - aggregate all exposed models across all channels
+    const channels = await listChannels(env.KV);
+    const modelSet = new Set();
+    for (const c of channels) {
+      if (Array.isArray(c.models)) {
+        c.models.forEach((m) => modelSet.add(m));
+      }
+    }
+    exposedModels = Array.from(modelSet);
   }
 
-  const exposedModels = Array.isArray(channel.models) ? channel.models : [];
   const modelList = exposedModels.map((modelId) => ({
     id: modelId,
     object: 'model',
     created: Math.floor(Date.now() / 1000),
-    owned_by: prefix,
+    owned_by: prefix || 'nextrouter',
     permission: [],
     root: modelId,
     parent: null,
@@ -161,40 +181,15 @@ export async function handleModelsRequest(request, env, prefix) {
 }
 
 /**
- * Handle POST /:prefix/v1/chat/completions
+ * Handle POST /v1/chat/completions or POST /:prefix/v1/chat/completions
  */
-export async function handleChatCompletions(request, env, ctx, prefix) {
+export async function handleChatCompletions(request, env, ctx, prefix = null) {
   const auth = await authenticateClient(request, env.KV, prefix);
   if (auth.error) return auth.error;
 
-  const { hash } = auth;
-  const channel = await getChannel(env.KV, prefix);
+  const { hash, keyRecord } = auth;
 
-  if (!channel) {
-    return jsonResponse(
-      {
-        error: {
-          message: `Channel '${prefix}' not found`,
-          type: 'invalid_request_error',
-        },
-      },
-      404
-    );
-  }
-
-  if (!channel.openaiUrl || !channel.apiKey) {
-    return jsonResponse(
-      {
-        error: {
-          message: `Channel '${prefix}' is not properly configured with upstream URL and API Key`,
-          type: 'server_error',
-        },
-      },
-      500
-    );
-  }
-
-  // Parse request body
+  // Parse request body first
   let body;
   try {
     body = await request.json();
@@ -207,6 +202,62 @@ export async function handleChatCompletions(request, env, ctx, prefix) {
         },
       },
       400
+    );
+  }
+
+  // Resolve target channel
+  let targetPrefix = prefix;
+  if (!targetPrefix) {
+    if (keyRecord.channelPrefix && keyRecord.channelPrefix !== '*') {
+      targetPrefix = keyRecord.channelPrefix;
+    } else {
+      // Key can use any channel. Match channel by requested model
+      const channels = await listChannels(env.KV);
+      const matched = channels.find(
+        (c) => Array.isArray(c.models) && c.models.includes(body.model)
+      );
+      if (matched) {
+        targetPrefix = matched.prefix;
+      } else if (channels.length > 0) {
+        targetPrefix = channels[0].prefix;
+      }
+    }
+  }
+
+  if (!targetPrefix) {
+    return jsonResponse(
+      {
+        error: {
+          message: 'No active channel available. Please configure an upstream channel in Next Router.',
+          type: 'invalid_request_error',
+        },
+      },
+      404
+    );
+  }
+
+  const channel = await getChannel(env.KV, targetPrefix);
+  if (!channel) {
+    return jsonResponse(
+      {
+        error: {
+          message: `Channel '${targetPrefix}' not found`,
+          type: 'invalid_request_error',
+        },
+      },
+      404
+    );
+  }
+
+  if (!channel.openaiUrl || !channel.apiKey) {
+    return jsonResponse(
+      {
+        error: {
+          message: `Channel '${targetPrefix}' is not properly configured with upstream URL and API Key`,
+          type: 'server_error',
+        },
+      },
+      500
     );
   }
 
