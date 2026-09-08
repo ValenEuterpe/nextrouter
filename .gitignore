@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+
+# Cloudflare Wrangler
+.wrangler/
+.dev.vars
+
+# Logs & temp
+*.log
+npm-debug.log*
+.DS_Store

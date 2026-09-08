@@ -1,0 +1,20 @@
+{
+  "name": "nextrouter",
+  "version": "1.0.0",
+  "description": "Production-grade multi-channel OpenAI-compatible proxy on Cloudflare Workers with per-key token limits",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "test": "node test/test-proxy.js"
+  },
+  "devDependencies": {
+    "wrangler": "^3.111.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "private": true
+}
