@@ -1,9 +1,10 @@
 # Dependencies
 node_modules/
 
-# Cloudflare Wrangler
+# Cloudflare Wrangler & Build
 .wrangler/
 .dev.vars
+dist/
 
 # Logs & temp
 *.log
