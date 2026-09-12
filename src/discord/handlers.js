@@ -38,7 +38,7 @@ export function ephemeralEmbed(title, description, color = DISCORD_EMBED_COLOR, 
           description,
           color,
           fields,
-          footer: { text: 'Next Router • Ultra-Fast Neural Gateway' },
+          footer: { text: 'DiscordLiteRouter • Ultra-Fast Neural Gateway' },
           timestamp: new Date().toISOString(),
         },
       ],
@@ -56,7 +56,7 @@ export function publicEmbed(title, description, color = DISCORD_EMBED_COLOR, fie
           description,
           color,
           fields,
-          footer: { text: 'Next Router • Ultra-Fast Neural Gateway' },
+          footer: { text: 'DiscordLiteRouter • Ultra-Fast Neural Gateway' },
           timestamp: new Date().toISOString(),
         },
       ],
@@ -111,7 +111,7 @@ async function handleGetApiKey(user, env, baseUrl) {
       const checkinActive = isCheckinValid(existingKey);
       return ephemeralEmbed(
         '⚠️ You Already Have an Active API Key',
-        `Hello **${user.global_name || user.username}**, you already have an initialized Next Router API key.\n\n` +
+        `Hello **${user.global_name || user.username}**, you already have an initialized DiscordLiteRouter API key.\n\n` +
         `🔑 **Key Preview:** \`${existingKey.rawKey ? existingKey.rawKey.slice(0, 8) + '••••••••' : 'sk-••••••••'}\`\n` +
         `🌐 **Base URL:** \`${baseUrl}\`\n` +
         `📊 **Quota:** ${(existingKey.tokensUsed || 0).toLocaleString()} / ${(existingKey.tokenLimit || 0).toLocaleString()} tokens\n` +
@@ -155,7 +155,7 @@ async function handleGetApiKey(user, env, baseUrl) {
   });
 
   return ephemeralEmbed(
-    '⚡ Next Router API Key Initialized',
+    '⚡ DiscordLiteRouter API Key Initialized',
     `Welcome, **${user.global_name || user.username}**! Your high-speed OpenAI-compatible key is ready.\n\n` +
     `🔑 **Your Secret API Key:**\n\`\`\`\n${rawKey}\n\`\`\`\n` +
     `🌐 **Generic Base URL (Janitor.ai / SillyTavern / LibreChat):**\n\`\`\`\n${baseUrl}\n\`\`\`\n` +
@@ -230,7 +230,7 @@ async function handleStats(caller, options, env) {
   if (!userMapping) {
     return ephemeralEmbed(
       'No Telemetry Found',
-      `No Next Router account found for ${targetDisplayName}. Run **\`/getapikey\`** to get started.`,
+      `No DiscordLiteRouter account found for ${targetDisplayName}. Run **\`/getapikey\`** to get started.`,
       DISCORD_EMBED_WARNING
     );
   }
@@ -303,7 +303,7 @@ async function handleStats(caller, options, env) {
   ];
 
   return publicEmbed(
-    `📊 Next Router Telemetry // ${keyRecord.owner || targetDisplayName}`,
+    `📊 DiscordLiteRouter Telemetry // ${keyRecord.owner || targetDisplayName}`,
     `Account overview and all-time usage statistics:`,
     DISCORD_EMBED_COLOR,
     fields
@@ -318,7 +318,7 @@ async function handleModels(env) {
   if (modelStatsList.length === 0) {
     return ephemeralEmbed(
       'No Models Configured',
-      'There are currently no exposed models configured on Next Router. Please add an upstream channel in the dashboard.',
+      'There are currently no exposed models configured on DiscordLiteRouter. Please add an upstream channel in the dashboard.',
       DISCORD_EMBED_WARNING
     );
   }
@@ -335,12 +335,12 @@ async function handleModels(env) {
 
   // Discord embeds have a 4096 character limit for description, chunk if needed
   const descriptionText =
-    `Here are all available models on Next Router. Click any model ID to copy it for your client app:\n\n` +
+    `Here are all available models on DiscordLiteRouter. Click any model ID to copy it for your client app:\n\n` +
     modelLines.slice(0, 25).join('\n') +
     (modelLines.length > 25 ? `\n\n*...and ${modelLines.length - 25} more models.*` : '');
 
   return publicEmbed(
-    `🤖 Available Next Router Models (${modelStatsList.length})`,
+    `🤖 Available DiscordLiteRouter Models (${modelStatsList.length})`,
     descriptionText,
     DISCORD_EMBED_COLOR,
     [
@@ -374,7 +374,7 @@ async function handleCheckin(user, env) {
 
   return ephemeralEmbed(
     '✅ Daily Check-in Successful!',
-    `Awesome, **${user.global_name || user.username}**! Your Next Router API key has been renewed.\n\n` +
+    `Awesome, **${user.global_name || user.username}**! Your DiscordLiteRouter API key has been renewed.\n\n` +
     `⏰ **Active Window:** Valid for the next **24 hours** (expires ${expiryStr})\n` +
     `📈 **Lifetime Check-ins:** **${updatedKey.checkinCount || 1}** check-in(s) completed\n` +
     `⚡ **Remaining Quota:** ${(updatedKey.tokensUsed || 0).toLocaleString()} / ${(updatedKey.tokenLimit || 0).toLocaleString()} tokens\n\n` +

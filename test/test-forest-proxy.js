@@ -33,7 +33,7 @@ class MockKV {
 }
 
 async function runForestTest() {
-  console.log('🌲 Testing Next Router against The Forest Proxy...');
+  console.log('🌲 Testing DiscordLiteRouter against The Forest Proxy...');
 
   const kv = new MockKV();
   const secret = 'quantum-secret-key-9999';
@@ -134,8 +134,8 @@ async function runForestTest() {
   console.log('   Exposed models list:', exposedModelsJson.data.map(m => m.id));
   assert.strictEqual(exposedModelsJson.data.length, 2);
 
-  // 6. Execute Chat Completion through Next Router Proxy
-  console.log('6. Forwarding chat completion through Next Router to The Forest Proxy...');
+  // 6. Execute Chat Completion through DiscordLiteRouter Proxy
+  console.log('6. Forwarding chat completion through DiscordLiteRouter to The Forest Proxy...');
   const chatRes = await worker.fetch(
     new Request('https://nextrouter.workers.dev/forest/v1/chat/completions', {
       method: 'POST',
@@ -145,7 +145,7 @@ async function runForestTest() {
       },
       body: JSON.stringify({
         model: 'my/valentinedemo/claude-sonnet-4-6',
-        messages: [{ role: 'user', content: 'Say "Next Router online" in 3 words' }],
+        messages: [{ role: 'user', content: 'Say "DiscordLiteRouter online" in 3 words' }],
         max_tokens: 15,
         stream: false,
       }),

@@ -1,6 +1,6 @@
-# NEXT ROUTER ⚡
+# DISCORDLITEROUTER ⚡
 
-**Next Router** is an ultra-high-performance, futuristic OpenAI-compatible AI gateway deployed directly onto **Cloudflare Workers** with **Cloudflare KV**.
+**DiscordLiteRouter** is an ultra-high-performance, futuristic OpenAI-compatible AI gateway deployed directly onto **Cloudflare Workers** with **Cloudflare KV**.
 
 Features:
 - **Futuristic Operator Terminal**: Cyberpunk dark glassmorphism dashboard served directly by the Worker (zero external dependencies).
@@ -82,15 +82,15 @@ npm run deploy
 
 Once finished, Wrangler will display your live Worker URL:
 ```
-Published nextrouter (1.23 sec)
-  https://nextrouter.<your-subdomain>.workers.dev
+Published dnextrouter (1.23 sec)
+  https://dnextrouter.<your-subdomain>.workers.dev
 ```
 
 ---
 
-## 🖥️ Using the Next Router Dashboard
+## 🖥️ Using the DiscordLiteRouter Dashboard
 
-1. Navigate to your Worker URL: `https://nextrouter.<your-subdomain>.workers.dev/admin` (or `/login`).
+1. Navigate to your Worker URL: `https://dnextrouter.<your-subdomain>.workers.dev/admin` (or `/login`).
 2. Log in using your `OWNER_USER` and `OWNER_PASS`.
 
 ### Adding a Channel (e.g., "forest" or "op")
@@ -100,7 +100,7 @@ Published nextrouter (1.23 sec)
 4. Enter the upstream **API Key** (`sk-...`).
 5. Click **Save Channel**.
 6. On the channel row, click **🔍 Test & Select Models**:
-   - Next Router contacts the provider and populates a searchable dropdown with all available models.
+   - DiscordLiteRouter contacts the provider and populates a searchable dropdown with all available models.
    - Check the models you want to expose for this channel.
    - Click **Save Selected Models**.
 
@@ -117,13 +117,13 @@ Published nextrouter (1.23 sec)
 
 ## 🔌 Connecting Clients & Apps (Janitor.ai, SillyTavern, SDKs)
 
-Next Router provides standard OpenAI-compatible endpoints:
+DiscordLiteRouter provides standard OpenAI-compatible endpoints:
 
 ### Standard Base URL (Recommended for Janitor.ai, SillyTavern, LibreChat)
 ```
 https://dnextrouter.<your-subdomain>.workers.dev/v1
 ```
-Any client application connecting to this Base URL will automatically call `/chat/completions` or `/models`, and Next Router will seamlessly route requests based on your client API key!
+Any client application connecting to this Base URL will automatically call `/chat/completions` or `/models`, and DiscordLiteRouter will seamlessly route requests based on your client API key!
 
 ### Channel-Targeted Base URL (Optional)
 ```
@@ -170,7 +170,7 @@ for chunk in response:
 
 ## 🤖 Discord Bot Integration & Slash Commands
 
-Next Router comes with native Discord integration running directly on Cloudflare Workers via standard Web Crypto Ed25519 signature verification (zero external bot hosting needed).
+DiscordLiteRouter comes with native Discord integration running directly on Cloudflare Workers via standard Web Crypto Ed25519 signature verification (zero external bot hosting needed).
 
 ### Available Slash Commands
 
@@ -184,14 +184,14 @@ Next Router comes with native Discord integration running directly on Cloudflare
 
 ### Discord Setup (Zero Terminal Commands Required)
 
-Next Router features a built-in **Discord Bot Management Hub** inside the Operator Dashboard:
+DiscordLiteRouter features a built-in **Discord Bot Management Hub** inside the Operator Dashboard:
 
 1. **Create Application**:
    Go to the [Discord Developer Portal](https://discord.com/developers/applications) and click **New Application**.
 2. **Retrieve Credentials**:
    - Under **General Information**, copy your **Application ID** and **Public Key**.
    - Under the **Bot** tab, generate or copy your **Bot Token**.
-3. **Configure in Next Router Dashboard**:
+3. **Configure in DiscordLiteRouter Dashboard**:
    - Log into your dashboard (`/admin`) and navigate to the **🤖 Discord Bot** tab.
    - Paste your **Application ID**, **Public Key**, and **Bot Token**, choose your default token quota (e.g. `2,000,000`), and click **Save Discord Configuration**.
 4. **Set Interactions Endpoint**:
@@ -199,7 +199,7 @@ Next Router features a built-in **Discord Bot Management Hub** inside the Operat
    - In Discord Developer Portal -> General Information, paste it into **Interactions Endpoint URL** and click Save Changes.
 5. **1-Click Command Registration**:
    - Click **⚡ Register Slash Commands with Discord** directly on the dashboard!
-   - Next Router will instantly register the 5 commands globally with Discord's REST API.
+   - DiscordLiteRouter will instantly register the 5 commands globally with Discord's REST API.
 6. **Invite Bot to Your Server**:
    - In Discord Developer Portal -> OAuth2 -> URL Generator, check scopes `bot` and `applications.commands`.
    - Open the generated invite link to authorize the bot into your server.
@@ -210,7 +210,7 @@ Next Router features a built-in **Discord Bot Management Hub** inside the Operat
 
 ## 📜 Activity Logs & Telemetry Engine
 
-Next Router includes an asynchronous telemetry engine that logs every request without impacting latency:
+DiscordLiteRouter includes an asynchronous telemetry engine that logs every request without impacting latency:
 - **Circular Ring Buffer**: Maintains recent requests with latency (ms), token counts, prompt vs. completion breakdown, model, channel, and HTTP status codes.
 - **Model Reliability Metrics**: Real-time per-model reliability monitoring (`successCount / (successCount + errorCount) * 100%`).
 - **Dashboard Explorer**: Search and filter recent traffic by model, client name, or HTTP status directly inside the Operator Terminal.

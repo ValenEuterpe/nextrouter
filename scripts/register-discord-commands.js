@@ -7,7 +7,7 @@ if (!APPLICATION_ID || !BOT_TOKEN) {
   console.error('❌ Missing DISCORD_APPLICATION_ID or DISCORD_BOT_TOKEN.');
   console.error('Usage:');
   console.error('  npx cross-env DISCORD_APPLICATION_ID="..." DISCORD_BOT_TOKEN="..." node scripts/register-discord-commands.js');
-  console.error('Or configure directly in the Next Router Owner Dashboard!');
+  console.error('Or configure directly in the DiscordLiteRouter Owner Dashboard!');
   process.exit(1);
 }
 

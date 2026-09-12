@@ -1,5 +1,5 @@
 {
-  "name": "nextrouter",
+  "name": "discordliterouter",
   "version": "1.0.0",
   "description": "Production-grade multi-channel OpenAI-compatible proxy on Cloudflare Workers with per-key token limits",
   "main": "src/index.js",

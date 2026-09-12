@@ -285,7 +285,7 @@ async function runTests() {
   const statsRes = await handleDiscordInteraction(statsInteraction, env, 'https://worker.test');
   const statsJson = await statsRes.json();
   const embed = statsJson.data.embeds[0];
-  assert(embed.title.includes('Next Router Telemetry'), 'Title should match');
+  assert(embed.title.includes('DiscordLiteRouter Telemetry'), 'Title should match');
   assert(embed.fields.some((f) => f.name.includes('Favorite Model') && f.value.includes('claude-3-5-sonnet')), 'Favorite model must be sonnet');
   assert(embed.fields.some((f) => f.name.includes('Total API Calls') && f.value.includes('**5** requests')), 'Calls count must match');
 

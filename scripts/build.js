@@ -19,7 +19,7 @@ async function build() {
       platform: 'neutral',
       mainFields: ['browser', 'module', 'main'],
     });
-    console.log('✅ Bundled Next Router to dist/_worker.js (Cloudflare Pages & Workers compatible)');
+    console.log('✅ Bundled DiscordLiteRouter to dist/_worker.js (Cloudflare Pages & Workers compatible)');
   } catch (err) {
     // Fallback if esbuild is not directly importable: copy src to dist
     console.log('esbuild bundle note:', err.message);
@@ -29,7 +29,7 @@ async function build() {
   }
 
   // Also create a dummy index.html in dist so Pages build output directory check passes
-  const dummyHtml = `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url=/admin"></head><body>Redirecting to Next Router...</body></html>`;
+  const dummyHtml = `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url=/admin"></head><body>Redirecting to DiscordLiteRouter...</body></html>`;
   fs.writeFileSync(path.join(distDir, 'index.html'), dummyHtml);
 }
 

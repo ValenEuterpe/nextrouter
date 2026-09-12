@@ -1,5 +1,5 @@
 /**
- * Server-rendered Futuristic HTML UI for Next Router
+ * Server-rendered Futuristic HTML UI for DiscordLiteRouter
  * Aesthetic: Cyberpunk / Quantum Glassmorphism / Neon Accents
  */
 
@@ -9,7 +9,7 @@ export function renderLoginPage(errorMessage = '') {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Next Router // Neural Gateway Authentication</title>
+  <title>DiscordLiteRouter // Neural Gateway Authentication</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -212,7 +212,7 @@ export function renderLoginPage(errorMessage = '') {
       <span>Cloudflare Edge // Online</span>
     </div>
     
-    <div class="brand">NEXT ROUTER</div>
+    <div class="brand">DISCORDLITEROUTER</div>
     <div class="subtitle">Neural Gateway & High-Speed Multi-Channel Model Orchestrator.</div>
 
     ${errorMessage ? `<div class="error-box"><span>⚠️</span> <span>${errorMessage}</span></div>` : ''}
@@ -233,7 +233,7 @@ export function renderLoginPage(errorMessage = '') {
       <button type="submit">Initialize Quantum Session ➔</button>
     </form>
 
-    <div class="footer-note">NEXT ROUTER v1.0 • SECURED WITH SHA-256 HMAC</div>
+    <div class="footer-note">DISCORDLITEROUTER v1.0 • SECURED WITH SHA-256 HMAC</div>
   </div>
 </body>
 </html>`;
@@ -245,7 +245,7 @@ export function renderDashboardPage() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Next Router // Control Terminal</title>
+  <title>DiscordLiteRouter // Control Terminal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -892,7 +892,7 @@ export function renderDashboardPage() {
     <div class="brand-group">
       <div class="brand-logo">⚡</div>
       <div>
-        <div class="brand-title">NEXT ROUTER</div>
+        <div class="brand-title">DISCORDLITEROUTER</div>
       </div>
       <span class="brand-badge">Owner Terminal</span>
     </div>
@@ -1222,7 +1222,7 @@ export function renderDashboardPage() {
           <div style="background: rgba(6, 10, 22, 0.6); padding: 1rem; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.1);">
             <div style="font-weight: 700; font-size: 0.84rem; color: var(--cyan); margin-bottom: 4px;">3. Set Interactions URL</div>
             <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;">
-              Copy the <strong>Interactions Endpoint URL</strong> above and paste it into General Information on Discord. Next Router will immediately verify the handshake.
+              Copy the <strong>Interactions Endpoint URL</strong> above and paste it into General Information on Discord. DiscordLiteRouter will immediately verify the handshake.
             </div>
           </div>
           <div style="background: rgba(6, 10, 22, 0.6); padding: 1rem; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.1);">

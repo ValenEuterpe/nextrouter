@@ -5,7 +5,7 @@
 export const DISCORD_SLASH_COMMANDS = [
   {
     name: 'getapikey',
-    description: 'Initialize your account and receive your Next Router API key (1 per user)',
+    description: 'Initialize your account and receive your DiscordLiteRouter API key (1 per user)',
   },
   {
     name: 'rotatekey',
@@ -13,7 +13,7 @@ export const DISCORD_SLASH_COMMANDS = [
   },
   {
     name: 'stats',
-    description: 'View all-time Next Router usage, favorite models, and check-in status',
+    description: 'View all-time DiscordLiteRouter usage, favorite models, and check-in status',
     options: [
       {
         name: 'user',

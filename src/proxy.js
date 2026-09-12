@@ -191,7 +191,7 @@ export async function handleModelsRequest(request, env, prefix = null) {
     id: modelId,
     object: 'model',
     created: Math.floor(Date.now() / 1000),
-    owned_by: prefix || 'nextrouter',
+    owned_by: prefix || 'DiscordLiteRouter',
     permission: [],
     root: modelId,
     parent: null,
@@ -251,7 +251,7 @@ export async function handleChatCompletions(request, env, ctx, prefix = null) {
     return jsonResponse(
       {
         error: {
-          message: 'No active channel available. Please configure an upstream channel in Next Router.',
+          message: 'No active channel available. Please configure an upstream channel in DiscordLiteRouter.',
           type: 'invalid_request_error',
         },
       },
