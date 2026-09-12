@@ -10,11 +10,15 @@ import {
   handleRevokeKey,
   handleGetRecentLogs,
   handleGetModelStats,
+  handleGetDiscordSettings,
+  handleSaveDiscordSettings,
+  handleRegisterDiscordCommands,
 } from './adminApi.js';
 import { handleCors, handleModelsRequest, handleChatCompletions, corsHeaders } from './proxy.js';
 import { renderLoginPage, renderDashboardPage } from './ui.js';
 import { verifyDiscordSignature } from './discord/verify.js';
 import { handleDiscordInteraction } from './discord/handlers.js';
+import { getDiscordSettings } from './discord/commands.js';
 
 function parseCookies(header) {
   const list = {};
@@ -52,7 +56,10 @@ export default {
     // Discord Slash Commands Interactions Endpoint
     if (pathname === '/discord/interactions' && method === 'POST') {
       const rawBody = await request.text();
-      const isValid = await verifyDiscordSignature(request, rawBody, env.DISCORD_PUBLIC_KEY);
+      const discordSettings = await getDiscordSettings(env.KV, env);
+      const publicKey = discordSettings.publicKey || env.DISCORD_PUBLIC_KEY;
+
+      const isValid = await verifyDiscordSignature(request, rawBody, publicKey);
       if (!isValid) {
         return new Response('Invalid request signature', { status: 401 });
       }
@@ -62,7 +69,14 @@ export default {
       } catch {
         return new Response('Invalid JSON payload', { status: 400 });
       }
-      return await handleDiscordInteraction(interaction, env, request.url);
+
+      // Merge resolved default token quota for new users
+      const interactionEnv = {
+        ...env,
+        DEFAULT_DISCORD_TOKEN_LIMIT: discordSettings.defaultTokenLimit || env.DEFAULT_DISCORD_TOKEN_LIMIT || 2000000,
+      };
+
+      return await handleDiscordInteraction(interaction, interactionEnv, request.url);
     }
 
     // 2. Root Redirect
@@ -201,6 +215,16 @@ export default {
 
       if (pathname === '/admin/api/model-stats' && method === 'GET') {
         return handleGetModelStats(request, env);
+      }
+
+      if (pathname === '/admin/api/settings/discord' && method === 'GET') {
+        return handleGetDiscordSettings(env);
+      }
+      if (pathname === '/admin/api/settings/discord' && method === 'POST') {
+        return handleSaveDiscordSettings(request, env);
+      }
+      if (pathname === '/admin/api/settings/discord/register' && method === 'POST') {
+        return handleRegisterDiscordCommands(request, env);
       }
 
       return new Response(JSON.stringify({ error: 'Not Found' }), {

@@ -182,26 +182,29 @@ Next Router comes with native Discord integration running directly on Cloudflare
 | **`/models`** | Public Embed | Lists all available model IDs formatted with click-to-copy code blocks, accompanied by calculated real-time success percentages. |
 | **`/checkin`** | Ephemeral (Private) | Resets the 24-hour check-in requirement. If expired, API requests return HTTP 403 `checkin_required` until the user checks in. |
 
-### Discord Setup Guide
+### Discord Setup (Zero Terminal Commands Required)
 
-1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) and click **New Application**.
-2. Under **General Information**, copy your **Application ID** and **Public Key**.
-3. Under the **Bot** tab, generate or copy your **Bot Token**.
-4. Set the **Interactions Endpoint URL** to:
-   ```
-   https://<your-worker-domain>/discord/interactions
-   ```
-   *Discord will automatically send a cryptographic ping handshake that Next Router validates and acknowledges.*
-5. Set the required secrets in Cloudflare:
-   ```bash
-   npx wrangler secret put DISCORD_PUBLIC_KEY
-   npx wrangler secret put DISCORD_APPLICATION_ID
-   npx wrangler secret put DISCORD_BOT_TOKEN
-   ```
-6. Register the 5 global slash commands with Discord:
-   ```bash
-   npm run discord:register
-   ```
+Next Router features a built-in **Discord Bot Management Hub** inside the Operator Dashboard:
+
+1. **Create Application**:
+   Go to the [Discord Developer Portal](https://discord.com/developers/applications) and click **New Application**.
+2. **Retrieve Credentials**:
+   - Under **General Information**, copy your **Application ID** and **Public Key**.
+   - Under the **Bot** tab, generate or copy your **Bot Token**.
+3. **Configure in Next Router Dashboard**:
+   - Log into your dashboard (`/admin`) and navigate to the **🤖 Discord Bot** tab.
+   - Paste your **Application ID**, **Public Key**, and **Bot Token**, choose your default token quota (e.g. `2,000,000`), and click **Save Discord Configuration**.
+4. **Set Interactions Endpoint**:
+   - Click the **📋 Copy Endpoint URL** button on the dashboard.
+   - In Discord Developer Portal -> General Information, paste it into **Interactions Endpoint URL** and click Save Changes.
+5. **1-Click Command Registration**:
+   - Click **⚡ Register Slash Commands with Discord** directly on the dashboard!
+   - Next Router will instantly register the 5 commands globally with Discord's REST API.
+6. **Invite Bot to Your Server**:
+   - In Discord Developer Portal -> OAuth2 -> URL Generator, check scopes `bot` and `applications.commands`.
+   - Open the generated invite link to authorize the bot into your server.
+
+*(Optional Alternative: If you prefer terminal setup, you can still use `npx wrangler secret put DISCORD_...` and `npm run discord:register`)*
 
 ---
 

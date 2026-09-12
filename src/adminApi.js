@@ -11,6 +11,11 @@ import {
   getRecentLogs,
   listAllModelStats,
 } from './kv.js';
+import {
+  getDiscordSettings,
+  saveDiscordSettings,
+  registerDiscordCommands,
+} from './discord/commands.js';
 
 function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -269,4 +274,116 @@ export async function handleGetRecentLogs(request, env) {
 export async function handleGetModelStats(request, env) {
   const stats = await listAllModelStats(env.KV);
   return jsonResponse({ success: true, stats });
+}
+
+// ----------------- Discord Bot Configuration API -----------------
+
+export async function handleGetDiscordSettings(env) {
+  const settings = await getDiscordSettings(env.KV, env);
+  return jsonResponse({
+    success: true,
+    settings: {
+      applicationId: settings.applicationId,
+      publicKey: settings.publicKey,
+      botTokenMasked: maskApiKey(settings.botToken),
+      hasBotToken: Boolean(settings.botToken),
+      defaultTokenLimit: settings.defaultTokenLimit,
+      isConfigured: settings.isConfigured,
+      lastRegisteredAt: settings.lastRegisteredAt,
+      lastCommands: settings.lastCommands,
+      source: settings.source,
+    },
+  });
+}
+
+export async function handleSaveDiscordSettings(request, env) {
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonResponse({ error: 'Invalid JSON body' }, 400);
+  }
+
+  const { applicationId, publicKey, botToken, defaultTokenLimit } = body;
+  const current = await getDiscordSettings(env.KV, env);
+
+  // Preserve existing bot token if omitted, blank, or sent as mask
+  let finalToken = current.botToken;
+  if (botToken && typeof botToken === 'string' && !botToken.includes('••••')) {
+    finalToken = botToken.trim();
+  }
+
+  const cleanAppId = applicationId !== undefined ? String(applicationId).trim() : current.applicationId;
+  const cleanPublicKey = publicKey !== undefined ? String(publicKey).trim() : current.publicKey;
+  const parsedLimit = Number(defaultTokenLimit) || current.defaultTokenLimit || 2000000;
+
+  const toSave = {
+    applicationId: cleanAppId,
+    publicKey: cleanPublicKey,
+    botToken: finalToken,
+    defaultTokenLimit: parsedLimit,
+  };
+
+  await saveDiscordSettings(env.KV, toSave);
+  const updated = await getDiscordSettings(env.KV, env);
+
+  return jsonResponse({
+    success: true,
+    message: 'Discord Bot configuration saved successfully!',
+    settings: {
+      applicationId: updated.applicationId,
+      publicKey: updated.publicKey,
+      botTokenMasked: maskApiKey(updated.botToken),
+      hasBotToken: Boolean(updated.botToken),
+      defaultTokenLimit: updated.defaultTokenLimit,
+      isConfigured: updated.isConfigured,
+      lastRegisteredAt: updated.lastRegisteredAt,
+      lastCommands: updated.lastCommands,
+      source: updated.source,
+    },
+  });
+}
+
+export async function handleRegisterDiscordCommands(request, env) {
+  let body = {};
+  try {
+    body = await request.json();
+  } catch {
+    // Body optional
+  }
+
+  const current = await getDiscordSettings(env.KV, env);
+  const applicationId = body.applicationId || current.applicationId;
+  const botToken = body.botToken && !body.botToken.includes('••••') ? body.botToken : current.botToken;
+
+  if (!applicationId) {
+    return jsonResponse({ error: 'Missing Discord Application ID. Please save it first.' }, 400);
+  }
+  if (!botToken) {
+    return jsonResponse({ error: 'Missing Discord Bot Token. Please save it first.' }, 400);
+  }
+
+  try {
+    const result = await registerDiscordCommands(applicationId, botToken);
+    
+    // Save lastRegisteredAt and lastCommands to KV
+    await saveDiscordSettings(env.KV, {
+      lastRegisteredAt: result.registeredAt,
+      lastCommands: result.commands.map((c) => ({
+        id: c.id,
+        name: c.name,
+        description: c.description,
+      })),
+    });
+
+    return jsonResponse({
+      success: true,
+      message: `Successfully registered ${result.count} global slash commands with Discord!`,
+      count: result.count,
+      commands: result.commands,
+      registeredAt: result.registeredAt,
+    });
+  } catch (err) {
+    return jsonResponse({ error: err.message }, 400);
+  }
 }

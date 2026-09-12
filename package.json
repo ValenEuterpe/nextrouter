@@ -8,7 +8,7 @@
     "build": "node scripts/build.js",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "test": "node test/test-proxy.js && node test/test-discord-and-logs.js",
+    "test": "node test/test-proxy.js && node test/test-discord-and-logs.js && node test/test-discord-dashboard.js",
     "discord:register": "node scripts/register-discord-commands.js"
   },
   "devDependencies": {

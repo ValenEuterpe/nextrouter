@@ -908,6 +908,9 @@ export function renderDashboardPage() {
         <button class="tab-btn" id="tabLogsBtn" onclick="switchTab('logs')">
           📜 Activity Logs
         </button>
+        <button class="tab-btn" id="tabDiscordBtn" onclick="switchTab('discord')">
+          🤖 Discord Bot
+        </button>
       </div>
 
       <form method="POST" action="/logout">
@@ -1065,6 +1068,170 @@ export function renderDashboardPage() {
             <tr><td colspan="7" class="empty-state">Loading telemetry logs...</td></tr>
           </tbody>
         </table>
+      </div>
+    </section>
+
+    <!-- Discord Bot Management View -->
+    <section id="discordView" style="display: none;">
+      <div class="view-header">
+        <div>
+          <h2 class="view-title">Discord Bot & Slash Commands Hub</h2>
+          <p class="view-desc">Configure Discord bot credentials, register global slash commands, and control user token quotas without terminal commands.</p>
+        </div>
+        <div id="discordStatusBadgeWrap">
+          <span class="badge-pill badge-channel" id="discordStatusBadge">Checking status...</span>
+        </div>
+      </div>
+
+      <!-- Interactions Endpoint Banner -->
+      <div style="background: rgba(14, 22, 44, 0.85); border: 1px solid var(--border-glow); border-radius: 14px; padding: 1.4rem 1.6rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; gap: 1.2rem; flex-wrap: wrap; box-shadow: 0 0 30px rgba(0, 242, 254, 0.08);">
+        <div style="flex: 1; min-width: 280px;">
+          <div style="font-size: 0.78rem; font-weight: 800; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 6px;">
+            <span>🌐</span> Discord Interactions Endpoint URL
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.6rem; line-height: 1.4;">
+            Paste this URL into the <strong>Interactions Endpoint URL</strong> field in the <a href="https://discord.com/developers/applications" target="_blank" style="color: #67e8f9; text-decoration: underline;">Discord Developer Portal</a>:
+          </div>
+          <code class="mono" id="discordEndpointDisplay" style="color: #67e8f9; background: #060914; padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(0, 242, 254, 0.3); font-size: 0.95rem; font-weight: 700; word-break: break-all;">https://.../discord/interactions</code>
+        </div>
+        <button class="btn btn-secondary" onclick="copyDiscordEndpoint()" style="white-space: nowrap;">
+          📋 Copy Endpoint URL
+        </button>
+      </div>
+
+      <!-- Two-Column Grid: Config Form & 1-Click Sync -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.8rem; margin-bottom: 2.5rem;">
+        
+        <!-- Column 1: Credentials Form -->
+        <div class="stat-card" style="padding: 1.8rem;">
+          <h3 style="font-size: 1.1rem; font-weight: 800; color: #fff; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 8px;">
+            <span>⚙️</span> Discord App Credentials
+          </h3>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.4rem;">
+            Saved directly to Cloudflare KV. Sensitive tokens are never revealed.
+          </p>
+
+          <div class="form-group">
+            <label>Discord Application ID (Client ID)</label>
+            <input type="text" id="discordAppIdInput" placeholder="e.g. 134567890123456789" />
+            <div class="helper-text">Found under General Information in Discord Developer Portal.</div>
+          </div>
+
+          <div class="form-group">
+            <label>Discord Public Key (Ed25519)</label>
+            <input type="text" id="discordPublicKeyInput" placeholder="e.g. a1b2c3d4e5f6..." />
+            <div class="helper-text">Used to verify cryptographic signatures of incoming Discord interactions.</div>
+          </div>
+
+          <div class="form-group">
+            <label>Discord Bot Token</label>
+            <input type="password" id="discordBotTokenInput" placeholder="Paste bot token (leave blank to keep existing)" />
+            <div class="helper-text" id="botTokenHelper">Found under the Bot tab in Discord Developer Portal.</div>
+          </div>
+
+          <div class="form-group">
+            <label>Default Token Quota per User</label>
+            <input type="number" id="discordQuotaInput" placeholder="2000000" value="2000000" />
+            <div class="chips-group">
+              <span class="chip" onclick="setDiscordQuota(500000)">500K</span>
+              <span class="chip" onclick="setDiscordQuota(1000000)">1M</span>
+              <span class="chip highlight" onclick="setDiscordQuota(2000000)">2M (Default)</span>
+              <span class="chip" onclick="setDiscordQuota(5000000)">5M</span>
+              <span class="chip" onclick="setDiscordQuota(10000000)">10M</span>
+            </div>
+            <div class="helper-text">Tokens assigned to users when they run <span class="mono">/getapikey</span> in Discord.</div>
+          </div>
+
+          <div style="margin-top: 1.8rem; display: flex; justify-content: flex-end;">
+            <button class="btn" onclick="saveDiscordSettingsForm()">
+              💾 Save Discord Configuration
+            </button>
+          </div>
+        </div>
+
+        <!-- Column 2: 1-Click Slash Command Registration -->
+        <div class="stat-card" style="padding: 1.8rem; display: flex; flex-direction: column;">
+          <h3 style="font-size: 1.1rem; font-weight: 800; color: #fff; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 8px;">
+            <span>⚡</span> 1-Click Command Sync
+          </h3>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.4rem;">
+            Publishes and synchronizes all 5 slash commands globally with Discord's REST API.
+          </p>
+
+          <div style="background: rgba(8, 14, 30, 0.7); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem; margin-bottom: 1.4rem; flex: 1;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.8rem;">
+              Included Global Slash Commands (5)
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.84rem;">
+                <code class="mono" style="color: var(--cyan); font-weight: 600;">/getapikey</code>
+                <span style="color: var(--text-muted); font-size: 0.78rem;">Issues 1 key per user</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.84rem;">
+                <code class="mono" style="color: var(--cyan); font-weight: 600;">/rotatekey</code>
+                <span style="color: var(--text-muted); font-size: 0.78rem;">Rotates key, keeps stats</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.84rem;">
+                <code class="mono" style="color: var(--cyan); font-weight: 600;">/stats [user]</code>
+                <span style="color: var(--text-muted); font-size: 0.78rem;">All-time usage telemetry</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.84rem;">
+                <code class="mono" style="color: var(--cyan); font-weight: 600;">/models</code>
+                <span style="color: var(--text-muted); font-size: 0.78rem;">Models & success rate %</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.84rem;">
+                <code class="mono" style="color: var(--cyan); font-weight: 600;">/checkin</code>
+                <span style="color: var(--text-muted); font-size: 0.78rem;">24-hour check-in renewal</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="background: rgba(0, 242, 254, 0.04); border: 1px dashed rgba(0, 242, 254, 0.25); border-radius: 10px; padding: 0.9rem 1.1rem; margin-bottom: 1.4rem;" id="registrationStatusBox">
+            <div style="font-size: 0.8rem; color: var(--text-dim);" id="registrationStatusText">
+              Commands not synced yet. Click below to register them with Discord.
+            </div>
+          </div>
+
+          <div>
+            <button class="btn" id="registerCommandsBtn" onclick="triggerRegisterCommands()" style="width: 100%; justify-content: center;">
+              <span>⚡ Register Slash Commands with Discord</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Developer Portal Walkthrough -->
+      <div style="background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.6rem;">
+        <h4 style="font-size: 0.95rem; font-weight: 800; color: #fff; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 8px;">
+          <span>📖</span> Quick 4-Step Discord Bot Setup Walkthrough
+        </h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.2rem;">
+          <div style="background: rgba(6, 10, 22, 0.6); padding: 1rem; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.1);">
+            <div style="font-weight: 700; font-size: 0.84rem; color: var(--cyan); margin-bottom: 4px;">1. Create Application</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;">
+              Open <a href="https://discord.com/developers/applications" target="_blank" style="color: #67e8f9;">Discord Developer Portal</a>, click <strong>New Application</strong>, and give it a name.
+            </div>
+          </div>
+          <div style="background: rgba(6, 10, 22, 0.6); padding: 1rem; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.1);">
+            <div style="font-weight: 700; font-size: 0.84rem; color: var(--cyan); margin-bottom: 4px;">2. Copy Keys & Bot Token</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;">
+              Copy <strong>Application ID</strong> and <strong>Public Key</strong>. Under <strong>Bot</strong> tab, click Reset Token to copy your <strong>Bot Token</strong>. Save them in the form above.
+            </div>
+          </div>
+          <div style="background: rgba(6, 10, 22, 0.6); padding: 1rem; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.1);">
+            <div style="font-weight: 700; font-size: 0.84rem; color: var(--cyan); margin-bottom: 4px;">3. Set Interactions URL</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;">
+              Copy the <strong>Interactions Endpoint URL</strong> above and paste it into General Information on Discord. Next Router will immediately verify the handshake.
+            </div>
+          </div>
+          <div style="background: rgba(6, 10, 22, 0.6); padding: 1rem; border-radius: 10px; border: 1px solid rgba(56, 189, 248, 0.1);">
+            <div style="font-weight: 700; font-size: 0.84rem; color: var(--cyan); margin-bottom: 4px;">4. Invite Bot to Server</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;">
+              Under <strong>OAuth2 ➔ URL Generator</strong>, select scopes <span class="mono">bot</span> and <span class="mono">applications.commands</span>. Open the generated invite link to add your bot!
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -1268,12 +1435,16 @@ export function renderDashboardPage() {
       document.getElementById('channelsView').style.display = tab === 'channels' ? 'block' : 'none';
       document.getElementById('keysView').style.display = tab === 'keys' ? 'block' : 'none';
       document.getElementById('logsView').style.display = tab === 'logs' ? 'block' : 'none';
+      document.getElementById('discordView').style.display = tab === 'discord' ? 'block' : 'none';
       document.getElementById('tabChannelsBtn').classList.toggle('active', tab === 'channels');
       document.getElementById('tabKeysBtn').classList.toggle('active', tab === 'keys');
       document.getElementById('tabLogsBtn').classList.toggle('active', tab === 'logs');
+      document.getElementById('tabDiscordBtn').classList.toggle('active', tab === 'discord');
       location.hash = tab;
       if (tab === 'logs') {
         loadLogsData();
+      } else if (tab === 'discord') {
+        loadDiscordSettings();
       }
     }
 
@@ -1857,15 +2028,132 @@ export function renderDashboardPage() {
       renderLogsTable(query);
     }
 
+    // Discord Bot Management Handlers
+    async function loadDiscordSettings() {
+      try {
+        const res = await fetch('/admin/api/settings/discord');
+        const data = await res.json();
+        if (!data.success) return;
+
+        const s = data.settings || {};
+        const appIdEl = document.getElementById('discordAppIdInput');
+        const pubKeyEl = document.getElementById('discordPublicKeyInput');
+        const quotaEl = document.getElementById('discordQuotaInput');
+        const tokenInput = document.getElementById('discordBotTokenInput');
+        const tokenHelper = document.getElementById('botTokenHelper');
+        const badge = document.getElementById('discordStatusBadge');
+        const statusText = document.getElementById('registrationStatusText');
+
+        if (appIdEl) appIdEl.value = s.applicationId || '';
+        if (pubKeyEl) pubKeyEl.value = s.publicKey || '';
+        if (quotaEl) quotaEl.value = s.defaultTokenLimit || 2000000;
+
+        if (tokenInput && tokenHelper) {
+          if (s.hasBotToken) {
+            tokenInput.placeholder = '•••••••••••••••••••• (Saved in KV)';
+            tokenHelper.textContent = 'Token is saved securely. Leave blank to keep existing token.';
+          } else {
+            tokenInput.placeholder = 'Paste Discord Bot token here';
+            tokenHelper.textContent = 'Found under the Bot tab in Discord Developer Portal.';
+          }
+        }
+
+        if (badge) {
+          if (s.isConfigured) {
+            badge.className = 'badge-pill badge-success';
+            badge.textContent = '● Configured & Ready';
+          } else {
+            badge.className = 'badge-pill badge-warning';
+            badge.textContent = '○ Setup Incomplete';
+          }
+        }
+
+        if (statusText) {
+          if (s.lastRegisteredAt) {
+            const syncDate = new Date(s.lastRegisteredAt).toLocaleString();
+            const cmdCount = Array.isArray(s.lastCommands) ? s.lastCommands.length : 5;
+            statusText.innerHTML = \`<span style="color: #6ee7b7; font-weight: 600;">✅ \${cmdCount} Slash Commands Active</span> • Last synced: \${syncDate}\`;
+          }
+        }
+      } catch (err) {
+        console.error('Error loading Discord settings:', err);
+      }
+    }
+
+    function setDiscordQuota(val) {
+      const quotaEl = document.getElementById('discordQuotaInput');
+      if (quotaEl) quotaEl.value = val;
+    }
+
+    async function saveDiscordSettingsForm() {
+      const applicationId = document.getElementById('discordAppIdInput')?.value.trim() || '';
+      const publicKey = document.getElementById('discordPublicKeyInput')?.value.trim() || '';
+      const botToken = document.getElementById('discordBotTokenInput')?.value.trim() || '';
+      const defaultTokenLimit = Number(document.getElementById('discordQuotaInput')?.value || 2000000);
+
+      try {
+        const res = await fetch('/admin/api/settings/discord', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ applicationId, publicKey, botToken, defaultTokenLimit }),
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Failed to save settings');
+
+        showToast('⚡ Discord configuration saved successfully!');
+        const tokenInput = document.getElementById('discordBotTokenInput');
+        if (tokenInput) tokenInput.value = '';
+        await loadDiscordSettings();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function triggerRegisterCommands() {
+      const btn = document.getElementById('registerCommandsBtn');
+      if (!btn) return;
+      const origHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Contacting Discord API...</span>';
+
+      try {
+        const res = await fetch('/admin/api/settings/discord/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Registration failed');
+
+        showToast(\`🎉 \${data.message}\`);
+        await loadDiscordSettings();
+      } catch (err) {
+        alert(\`Failed to register slash commands:\\n\\n\${err.message}\`);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+      }
+    }
+
+    function copyDiscordEndpoint() {
+      const url = location.origin + '/discord/interactions';
+      navigator.clipboard.writeText(url).then(() => {
+        showToast('🌐 Discord Interactions URL copied: ' + url);
+      });
+    }
+
     // Initialize
     window.addEventListener('DOMContentLoaded', () => {
       const baseUrlEl = document.getElementById('appBaseUrlDisplay');
       if (baseUrlEl) baseUrlEl.textContent = location.origin + '/v1';
+      const discordEl = document.getElementById('discordEndpointDisplay');
+      if (discordEl) discordEl.textContent = location.origin + '/discord/interactions';
       const hash = location.hash.replace('#', '');
       if (hash === 'keys') switchTab('keys');
       else if (hash === 'logs') switchTab('logs');
+      else if (hash === 'discord') switchTab('discord');
       loadAllData();
       loadLogsData();
+      loadDiscordSettings();
     });
   </script>
 </body>
