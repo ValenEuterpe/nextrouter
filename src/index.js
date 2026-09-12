@@ -8,9 +8,13 @@ import {
   handleCreateKey,
   handleUpdateKey,
   handleRevokeKey,
+  handleGetRecentLogs,
+  handleGetModelStats,
 } from './adminApi.js';
 import { handleCors, handleModelsRequest, handleChatCompletions, corsHeaders } from './proxy.js';
 import { renderLoginPage, renderDashboardPage } from './ui.js';
+import { verifyDiscordSignature } from './discord/verify.js';
+import { handleDiscordInteraction } from './discord/handlers.js';
 
 function parseCookies(header) {
   const list = {};
@@ -43,6 +47,22 @@ export default {
     // 1. Handle CORS Preflight for any route
     if (method === 'OPTIONS') {
       return handleCors();
+    }
+
+    // Discord Slash Commands Interactions Endpoint
+    if (pathname === '/discord/interactions' && method === 'POST') {
+      const rawBody = await request.text();
+      const isValid = await verifyDiscordSignature(request, rawBody, env.DISCORD_PUBLIC_KEY);
+      if (!isValid) {
+        return new Response('Invalid request signature', { status: 401 });
+      }
+      let interaction;
+      try {
+        interaction = JSON.parse(rawBody);
+      } catch {
+        return new Response('Invalid JSON payload', { status: 400 });
+      }
+      return await handleDiscordInteraction(interaction, env, request.url);
     }
 
     // 2. Root Redirect
@@ -173,6 +193,14 @@ export default {
         if (method === 'DELETE') {
           return handleRevokeKey(env, id);
         }
+      }
+
+      if (pathname === '/admin/api/logs' && method === 'GET') {
+        return handleGetRecentLogs(request, env);
+      }
+
+      if (pathname === '/admin/api/model-stats' && method === 'GET') {
+        return handleGetModelStats(request, env);
       }
 
       return new Response(JSON.stringify({ error: 'Not Found' }), {

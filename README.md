@@ -115,31 +115,33 @@ Published nextrouter (1.23 sec)
 
 ---
 
-## 🔌 Connecting Clients & Apps
+## 🔌 Connecting Clients & Apps (Janitor.ai, SillyTavern, SDKs)
 
-Your proxy follows standard OpenAI API conventions:
+Next Router provides standard OpenAI-compatible endpoints:
 
-### Base URL Format
+### Standard Base URL (Recommended for Janitor.ai, SillyTavern, LibreChat)
 ```
-https://<worker-name>.<subdomain>.workers.dev/<channel-prefix>/v1
+https://dnextrouter.<your-subdomain>.workers.dev/v1
 ```
-For example, with channel `forest`:
+Any client application connecting to this Base URL will automatically call `/chat/completions` or `/models`, and Next Router will seamlessly route requests based on your client API key!
+
+### Channel-Targeted Base URL (Optional)
 ```
-https://nextrouter.<subdomain>.workers.dev/forest/v1
+https://dnextrouter.<your-subdomain>.workers.dev/<channel-prefix>/v1
 ```
 
-### 1. Curl Test
+### 1. Curl Test (Generic /v1)
 ```bash
 # List exposed models
-curl https://nextrouter.<subdomain>.workers.dev/forest/v1/models \
+curl https://dnextrouter.<your-subdomain>.workers.dev/v1/models \
   -H "Authorization: Bearer sk-your-client-key"
 
 # Chat Completion
-curl https://nextrouter.<subdomain>.workers.dev/forest/v1/chat/completions \
+curl https://dnextrouter.<your-subdomain>.workers.dev/v1/chat/completions \
   -H "Authorization: Bearer sk-your-client-key" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "my/valentinedemo/claude-sonnet-4-6",
+    "model": "gpt-4o",
     "messages": [{"role": "user", "content": "Hello!"}],
     "stream": false
   }'
@@ -151,11 +153,11 @@ from openai import OpenAI
 
 client = OpenAI(
     api_key="sk-your-client-key",
-    base_url="https://nextrouter.<subdomain>.workers.dev/forest/v1"
+    base_url="https://dnextrouter.<your-subdomain>.workers.dev/v1"
 )
 
 response = client.chat.completions.create(
-    model="my/valentinedemo/claude-sonnet-4-6",
+    model="gpt-4o",
     messages=[{"role": "user", "content": "Hello!"}],
     stream=True
 )
@@ -163,3 +165,50 @@ response = client.chat.completions.create(
 for chunk in response:
     print(chunk.choices[0].delta.content or "", end="")
 ```
+
+---
+
+## 🤖 Discord Bot Integration & Slash Commands
+
+Next Router comes with native Discord integration running directly on Cloudflare Workers via standard Web Crypto Ed25519 signature verification (zero external bot hosting needed).
+
+### Available Slash Commands
+
+| Command | Visibility | Description |
+| :--- | :--- | :--- |
+| **`/getapikey`** | Ephemeral (Private) | Issues an API key bound to the Discord user (strictly 1 key per user). Includes base URL, quota, and 24h check-in status. |
+| **`/rotatekey`** | Ephemeral (Private) | Revokes the user's existing key and generates a fresh key, while preserving all-time usage stats, models used, and quota. |
+| **`/stats [user]`** | Public Embed | Displays all-time usage, quota %, favorite model, top models breakdown, call counts, and 24-hour check-in status. Can inspect self or mention any `@user`. |
+| **`/models`** | Public Embed | Lists all available model IDs formatted with click-to-copy code blocks, accompanied by calculated real-time success percentages. |
+| **`/checkin`** | Ephemeral (Private) | Resets the 24-hour check-in requirement. If expired, API requests return HTTP 403 `checkin_required` until the user checks in. |
+
+### Discord Setup Guide
+
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) and click **New Application**.
+2. Under **General Information**, copy your **Application ID** and **Public Key**.
+3. Under the **Bot** tab, generate or copy your **Bot Token**.
+4. Set the **Interactions Endpoint URL** to:
+   ```
+   https://<your-worker-domain>/discord/interactions
+   ```
+   *Discord will automatically send a cryptographic ping handshake that Next Router validates and acknowledges.*
+5. Set the required secrets in Cloudflare:
+   ```bash
+   npx wrangler secret put DISCORD_PUBLIC_KEY
+   npx wrangler secret put DISCORD_APPLICATION_ID
+   npx wrangler secret put DISCORD_BOT_TOKEN
+   ```
+6. Register the 5 global slash commands with Discord:
+   ```bash
+   npm run discord:register
+   ```
+
+---
+
+## 📜 Activity Logs & Telemetry Engine
+
+Next Router includes an asynchronous telemetry engine that logs every request without impacting latency:
+- **Circular Ring Buffer**: Maintains recent requests with latency (ms), token counts, prompt vs. completion breakdown, model, channel, and HTTP status codes.
+- **Model Reliability Metrics**: Real-time per-model reliability monitoring (`successCount / (successCount + errorCount) * 100%`).
+- **Dashboard Explorer**: Search and filter recent traffic by model, client name, or HTTP status directly inside the Operator Terminal.
+

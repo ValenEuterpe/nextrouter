@@ -8,6 +8,8 @@ import {
   createKey,
   updateKeyLimit,
   revokeKey,
+  getRecentLogs,
+  listAllModelStats,
 } from './kv.js';
 
 function jsonResponse(data, status = 200) {
@@ -252,4 +254,19 @@ export async function handleRevokeKey(env, id) {
   if (!id) return jsonResponse({ error: 'Key ID required' }, 400);
   await revokeKey(env.KV, id);
   return jsonResponse({ success: true, message: 'Key revoked successfully' });
+}
+
+// ----------------- Telemetry & Activity Logs API -----------------
+
+export async function handleGetRecentLogs(request, env) {
+  const url = new URL(request.url);
+  const limitParam = url.searchParams.get('limit');
+  const limit = limitParam ? Math.min(200, Math.max(1, parseInt(limitParam, 10))) : 50;
+  const logs = await getRecentLogs(env.KV, limit);
+  return jsonResponse({ success: true, logs });
+}
+
+export async function handleGetModelStats(request, env) {
+  const stats = await listAllModelStats(env.KV);
+  return jsonResponse({ success: true, stats });
 }

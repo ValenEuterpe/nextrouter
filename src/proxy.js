@@ -1,5 +1,12 @@
 import { sha256 } from './crypto.js';
-import { getChannel, getKeyByHash, incrementTokenUsage, listChannels } from './kv.js';
+import {
+  getChannel,
+  getKeyByHash,
+  incrementTokenUsage,
+  listChannels,
+  isCheckinValid,
+  recordRequestTelemetry,
+} from './kv.js';
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -117,6 +124,22 @@ async function authenticateClient(request, kv, channelPrefix) {
           },
         },
         429
+      ),
+    };
+  }
+
+  // Check 24-hour Discord check-in
+  if (keyRecord.requireCheckin && !isCheckinValid(keyRecord)) {
+    return {
+      error: jsonResponse(
+        {
+          error: {
+            message: 'Check-in expired. Please run /checkin in Discord to activate your key for the next 24 hours.',
+            type: 'checkin_required',
+            code: 'discord_checkin_expired',
+          },
+        },
+        403
       ),
     };
   }
@@ -285,6 +308,7 @@ export async function handleChatCompletions(request, env, ctx, prefix = null) {
   }
 
   let upstreamResponse;
+  const startTime = Date.now();
   try {
     upstreamResponse = await fetch(upstreamUrl, {
       method: 'POST',
@@ -292,6 +316,20 @@ export async function handleChatCompletions(request, env, ctx, prefix = null) {
       body: JSON.stringify(body),
     });
   } catch (err) {
+    const latencyMs = Date.now() - startTime;
+    const recordPromise = recordRequestTelemetry(env.KV, {
+      keyHash: hash,
+      model: body?.model || 'unknown',
+      channel: targetPrefix,
+      usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+      latencyMs,
+      status: 502,
+      success: false,
+    });
+    if (ctx?.waitUntil) {
+      ctx.waitUntil(recordPromise);
+    }
+
     return jsonResponse(
       {
         error: {
@@ -305,6 +343,20 @@ export async function handleChatCompletions(request, env, ctx, prefix = null) {
 
   // If upstream responded with error, return directly without charging quota
   if (!upstreamResponse.ok) {
+    const latencyMs = Date.now() - startTime;
+    const recordPromise = recordRequestTelemetry(env.KV, {
+      keyHash: hash,
+      model: body?.model || 'unknown',
+      channel: targetPrefix,
+      usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+      latencyMs,
+      status: upstreamResponse.status,
+      success: false,
+    });
+    if (ctx?.waitUntil) {
+      ctx.waitUntil(recordPromise);
+    }
+
     const errorText = await upstreamResponse.text();
     let errorJson;
     try {
@@ -318,11 +370,23 @@ export async function handleChatCompletions(request, env, ctx, prefix = null) {
   // Handle Non-Streaming Response
   if (!isStreaming) {
     const responseData = await upstreamResponse.json();
+    const latencyMs = Date.now() - startTime;
+    const usage = responseData.usage || {};
 
-    // Deduct / record tokens used
-    if (responseData.usage && typeof responseData.usage.total_tokens === 'number') {
-      const tokens = responseData.usage.total_tokens;
-      ctx.waitUntil(incrementTokenUsage(env.KV, hash, tokens));
+    const recordPromise = recordRequestTelemetry(env.KV, {
+      keyHash: hash,
+      model: body?.model || responseData.model || 'unknown',
+      channel: targetPrefix,
+      usage,
+      latencyMs,
+      status: 200,
+      success: true,
+    });
+
+    if (ctx?.waitUntil) {
+      ctx.waitUntil(recordPromise);
+    } else {
+      await recordPromise;
     }
 
     return jsonResponse(responseData, 200);
@@ -365,10 +429,26 @@ export async function handleChatCompletions(request, env, ctx, prefix = null) {
       }
     },
     flush() {
-      // Finalize token usage
+      // Finalize token usage and record telemetry
       const finalTokens = streamTotalTokens > 0 ? streamTotalTokens : estimatedTokens;
-      if (finalTokens > 0) {
-        ctx.waitUntil(incrementTokenUsage(env.KV, hash, finalTokens));
+      const latencyMs = Date.now() - startTime;
+
+      const recordPromise = recordRequestTelemetry(env.KV, {
+        keyHash: hash,
+        model: body?.model || 'unknown',
+        channel: targetPrefix,
+        usage: {
+          prompt_tokens: 0,
+          completion_tokens: finalTokens,
+          total_tokens: finalTokens,
+        },
+        latencyMs,
+        status: 200,
+        success: true,
+      });
+
+      if (ctx?.waitUntil) {
+        ctx.waitUntil(recordPromise);
       }
     },
   });

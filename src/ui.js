@@ -828,6 +828,63 @@ export function renderDashboardPage() {
       0% { transform: translateY(10px); opacity: 0; }
       100% { transform: translateY(0); opacity: 1; }
     }
+    /* Telemetry & Reliability Grid Styles */
+    .reliability-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 1.1rem;
+      margin-bottom: 2rem;
+    }
+    .reliability-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.2rem;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s;
+    }
+    .reliability-card:hover {
+      border-color: var(--border-glow);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(0, 242, 254, 0.12);
+    }
+    .reliability-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 0.6rem;
+    }
+    .reliability-rate {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .reliability-sub {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      margin-top: 0.4rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .badge-discord {
+      background: rgba(88, 101, 242, 0.18);
+      color: #a5b4fc;
+      border: 1px solid rgba(88, 101, 242, 0.4);
+    }
+    .badge-warning {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fcd34d;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .badge-danger {
+      background: var(--danger-subtle);
+      color: #ffa1b5;
+      border: 1px solid rgba(255, 75, 114, 0.35);
+    }
   </style>
 </head>
 <body>
@@ -847,6 +904,9 @@ export function renderDashboardPage() {
         </button>
         <button class="tab-btn" id="tabKeysBtn" onclick="switchTab('keys')">
           🔑 API Keys & Quotas
+        </button>
+        <button class="tab-btn" id="tabLogsBtn" onclick="switchTab('logs')">
+          📜 Activity Logs
         </button>
       </div>
 
@@ -953,6 +1013,56 @@ export function renderDashboardPage() {
           </thead>
           <tbody id="keysTableBody">
             <tr><td colspan="7" class="empty-state">Loading keys...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Activity Logs & Telemetry View -->
+    <section id="logsView" style="display: none;">
+      <div class="view-header">
+        <div>
+          <h2 class="view-title">Neural Request Telemetry & Logs</h2>
+          <p class="view-desc">Live request telemetry buffer, model reliability metrics, token throughput, and latency profiling.</p>
+        </div>
+        <button class="btn btn-secondary" onclick="loadLogsData()">
+          🔄 Refresh Telemetry
+        </button>
+      </div>
+
+      <!-- Model Reliability Sub-heading -->
+      <div style="margin-bottom: 0.8rem; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 8px;">
+        <span>📊</span> Model Reliability & Health
+      </div>
+      <div class="reliability-grid" id="reliabilityGrid">
+        <div class="empty-state" style="grid-column: 1/-1; padding: 1.8rem;">Loading model reliability data...</div>
+      </div>
+
+      <!-- Logs Search & Filter -->
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.2rem; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 260px;">
+          <input type="text" id="logSearchInput" placeholder="🔍 Filter by client, model, channel, status..." oninput="filterLogsList()" style="width: 100%; background: #060a17; border: 1px solid var(--border); color: #fff; padding: 0.75rem 1rem; border-radius: 10px; font-size: 0.88rem; outline: none;" />
+        </div>
+        <div style="color: var(--text-dim); font-size: 0.8rem; font-family: 'JetBrains Mono', monospace;" id="logsCountDisplay">
+          Showing 0 requests
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Client / Discord</th>
+              <th>Model</th>
+              <th>Channel</th>
+              <th>Tokens (P / C / Total)</th>
+              <th>Latency</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="logsTableBody">
+            <tr><td colspan="7" class="empty-state">Loading telemetry logs...</td></tr>
           </tbody>
         </table>
       </div>
@@ -1139,6 +1249,8 @@ export function renderDashboardPage() {
     let state = {
       channels: [],
       keys: [],
+      logs: [],
+      modelStats: [],
       currentTestPrefix: null,
       fetchedModels: [],
       selectedModelSet: new Set(),
@@ -1155,9 +1267,14 @@ export function renderDashboardPage() {
     function switchTab(tab) {
       document.getElementById('channelsView').style.display = tab === 'channels' ? 'block' : 'none';
       document.getElementById('keysView').style.display = tab === 'keys' ? 'block' : 'none';
+      document.getElementById('logsView').style.display = tab === 'logs' ? 'block' : 'none';
       document.getElementById('tabChannelsBtn').classList.toggle('active', tab === 'channels');
       document.getElementById('tabKeysBtn').classList.toggle('active', tab === 'keys');
+      document.getElementById('tabLogsBtn').classList.toggle('active', tab === 'logs');
       location.hash = tab;
+      if (tab === 'logs') {
+        loadLogsData();
+      }
     }
 
     function closeModal(id) {
@@ -1269,9 +1386,33 @@ export function renderDashboardPage() {
             </div>\`
           : '<span class="mono" style="color: var(--text-dim); font-size: 0.8rem;">Hidden</span>';
 
+        const isDiscordKey = Boolean(k.discordUserId);
+        const ownerCell = isDiscordKey
+          ? \`<div style="display: flex; flex-direction: column; gap: 4px;">
+               <strong style="color: #f1f5f9;">\${escapeHtml(k.owner)}</strong>
+               <span class="badge-pill badge-discord" style="font-size: 0.7rem; padding: 2px 6px; width: fit-content;">👾 Discord</span>
+             </div>\`
+          : \`<strong style="color: #f1f5f9;">\${escapeHtml(k.owner)}</strong>\`;
+
+        let checkinBadge = '';
+        if (k.requireCheckin) {
+          if (k.lastCheckinAt) {
+            const checkinTime = new Date(k.lastCheckinAt).getTime();
+            const elapsedHours = (Date.now() - checkinTime) / (1000 * 60 * 60);
+            const remainingHours = Math.max(0, 24 - elapsedHours);
+            if (remainingHours > 0) {
+              checkinBadge = \`<div style="margin-top: 4px;"><span class="badge-pill badge-success" style="font-size: 0.7rem;">⏰ Active (\${remainingHours.toFixed(1)}h)</span></div>\`;
+            } else {
+              checkinBadge = \`<div style="margin-top: 4px;"><span class="badge-pill badge-danger" style="font-size: 0.7rem;">⏰ Expired</span></div>\`;
+            }
+          } else {
+            checkinBadge = \`<div style="margin-top: 4px;"><span class="badge-pill badge-danger" style="font-size: 0.7rem;">⏰ Expired</span></div>\`;
+          }
+        }
+
         return \`
           <tr style="\${k.revoked ? 'opacity: 0.45;' : ''}">
-            <td><strong style="color: #f1f5f9;">\${escapeHtml(k.owner)}</strong></td>
+            <td>\${ownerCell}</td>
             <td>\${keyCell}</td>
             <td>
               <span class="badge-pill badge-channel">\${k.channelPrefix || '*'}</span>
@@ -1286,6 +1427,7 @@ export function renderDashboardPage() {
               <span class="badge-pill \${k.revoked ? 'badge-revoked' : 'badge-success'}">
                 \${k.revoked ? 'Revoked' : 'Active'}
               </span>
+              \${checkinBadge}
             </td>
             <td style="color: var(--text-dim); font-size: 0.8rem;" class="mono">
               \${new Date(k.createdAt).toLocaleDateString()}
@@ -1595,13 +1737,135 @@ export function renderDashboardPage() {
       }[m]));
     }
 
+    // Telemetry & Logs Handlers
+    async function loadLogsData() {
+      try {
+        const [logsRes, statsRes] = await Promise.all([
+          fetch('/admin/api/logs?limit=100'),
+          fetch('/admin/api/model-stats')
+        ]);
+        const logsData = await logsRes.json();
+        const statsData = await statsRes.json();
+
+        if (logsData.success) {
+          state.logs = logsData.logs || [];
+          renderLogsTable();
+        }
+        if (statsData.success) {
+          state.modelStats = statsData.stats || [];
+          renderReliabilityGrid();
+        }
+      } catch (err) {
+        showToast('Error loading telemetry: ' + err.message);
+      }
+    }
+
+    function renderReliabilityGrid() {
+      const grid = document.getElementById('reliabilityGrid');
+      if (!grid) return;
+      if (!state.modelStats || state.modelStats.length === 0) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1; padding: 1.8rem;">No model statistics recorded yet. Upstream requests will populate reliability live.</div>';
+        return;
+      }
+      grid.innerHTML = state.modelStats.map(m => {
+        let rateColor = '#10b981';
+        if (m.successRate < 80) rateColor = '#ff4b72';
+        else if (m.successRate < 95) rateColor = '#f59e0b';
+
+        return \`
+          <div class="reliability-card">
+            <div class="reliability-title" title="\${escapeHtml(m.model)}">\${escapeHtml(m.model)}</div>
+            <div class="reliability-rate" style="color: \${rateColor};">\${m.successRate}%</div>
+            <div class="reliability-sub">
+              \${(m.calls || 0).toLocaleString()} calls • \${(m.totalTokens || 0).toLocaleString()} tokens
+            </div>
+          </div>
+        \`;
+      }).join('');
+    }
+
+    function renderLogsTable(filter = '') {
+      const tbody = document.getElementById('logsTableBody');
+      if (!tbody) return;
+      const countDisplay = document.getElementById('logsCountDisplay');
+      const query = (filter || '').toLowerCase().trim();
+
+      const filtered = (state.logs || []).filter(log => {
+        if (!query) return true;
+        return (
+          (log.model && log.model.toLowerCase().includes(query)) ||
+          (log.keyOwner && log.keyOwner.toLowerCase().includes(query)) ||
+          (log.channel && log.channel.toLowerCase().includes(query)) ||
+          String(log.status).includes(query)
+        );
+      });
+
+      if (countDisplay) {
+        countDisplay.textContent = \`Showing \${filtered.length} of \${(state.logs || []).length} requests\`;
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No requests match criteria or no telemetry recorded yet.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(log => {
+        const d = new Date(log.timestamp);
+        const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const dateStr = d.toLocaleDateString();
+        const statusBadge = log.success
+          ? \`<span class="badge-pill badge-success">\${log.status || 200} OK</span>\`
+          : \`<span class="badge-pill badge-danger">\${log.status || 'ERR'}</span>\`;
+
+        const userDisplay = log.discordUserId
+          ? \`<div style="display: flex; align-items: center; gap: 4px;">
+               <strong>\${escapeHtml(log.keyOwner)}</strong>
+               <span class="badge-pill badge-discord" style="font-size: 0.68rem; padding: 2px 6px;">👾</span>
+             </div>\`
+          : \`<strong>\${escapeHtml(log.keyOwner || 'Anonymous')}</strong>\`;
+
+        return \`
+          <tr>
+            <td class="mono" style="font-size: 0.8rem; color: var(--text-dim);" title="\${escapeHtml(log.timestamp)}">
+              \${dateStr} \${timeStr}
+            </td>
+            <td>\${userDisplay}</td>
+            <td>
+              <code class="mono" style="color: #67e8f9; font-size: 0.82rem; background: rgba(0,242,254,0.06); padding: 2px 6px; border-radius: 4px;">
+                \${escapeHtml(log.model)}
+              </code>
+            </td>
+            <td>
+              <span class="badge-pill badge-channel" style="font-size: 0.74rem;">\${escapeHtml(log.channel || 'default')}</span>
+            </td>
+            <td class="mono" style="font-size: 0.82rem;">
+              <span title="Prompt">\${(log.promptTokens || 0).toLocaleString()}</span> / 
+              <span title="Completion">\${(log.completionTokens || 0).toLocaleString()}</span> / 
+              <strong title="Total" style="color: #fff;">\${(log.totalTokens || 0).toLocaleString()}</strong>
+            </td>
+            <td class="mono" style="font-size: 0.82rem; color: #94a3b8;">
+              \${log.latencyMs ? \`\${log.latencyMs}ms\` : '< 1ms'}
+            </td>
+            <td>\${statusBadge}</td>
+          </tr>
+        \`;
+      }).join('');
+    }
+
+    function filterLogsList() {
+      const query = document.getElementById('logSearchInput')?.value || '';
+      renderLogsTable(query);
+    }
+
     // Initialize
     window.addEventListener('DOMContentLoaded', () => {
       const baseUrlEl = document.getElementById('appBaseUrlDisplay');
       if (baseUrlEl) baseUrlEl.textContent = location.origin + '/v1';
       const hash = location.hash.replace('#', '');
       if (hash === 'keys') switchTab('keys');
+      else if (hash === 'logs') switchTab('logs');
       loadAllData();
+      loadLogsData();
     });
   </script>
 </body>
