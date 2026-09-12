@@ -44,9 +44,33 @@ async function getAuthenticatedUser(request, env) {
 
 export default {
   async fetch(request, env, ctx) {
+    // Normalize KV binding (supports either env.KV or env.KV_BINDING)
+    const kv = env.KV || env.KV_BINDING;
+    env.KV = kv;
+    env.KV_BINDING = kv;
+
     const url = new URL(request.url);
     const pathname = url.pathname;
     const method = request.method.toUpperCase();
+
+    // Guard against missing KV configuration
+    if (!kv && (pathname.startsWith('/admin/api/') || pathname.includes('/v1/'))) {
+      return new Response(
+        JSON.stringify({
+          error: {
+            message: 'Cloudflare KV database binding is not configured. Please bind a KV namespace named KV or KV_BINDING.',
+            type: 'configuration_error',
+          },
+        }),
+        {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
+      );
+    }
 
     // 1. Handle CORS Preflight for any route
     if (method === 'OPTIONS') {

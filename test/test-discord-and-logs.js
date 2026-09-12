@@ -131,7 +131,7 @@ async function runTests() {
     data: { name: 'getapikey' },
     member: { user: testUser },
   };
-  const keyRes1 = await handleDiscordInteraction(getApiKeyInteraction, env, 'https://dnextrouter.workers.dev/discord/interactions');
+  const keyRes1 = await handleDiscordInteraction(getApiKeyInteraction, env, 'https://discordlite.workers.dev/discord/interactions');
   const keyJson1 = await keyRes1.json();
   assert.strictEqual(keyJson1.type, 4, 'Should respond with message');
   assert.strictEqual(keyJson1.data.flags, 64, 'Must be ephemeral (flags: 64)');
@@ -149,7 +149,7 @@ async function runTests() {
   assert(isCheckinValid(userKey), 'Checkin must be valid initially');
 
   // Test Duplicate /getapikey -> Must return existing key warning and NOT duplicate
-  const keyResDuplicate = await handleDiscordInteraction(getApiKeyInteraction, env, 'https://dnextrouter.workers.dev/discord/interactions');
+  const keyResDuplicate = await handleDiscordInteraction(getApiKeyInteraction, env, 'https://discordlite.workers.dev/discord/interactions');
   const keyJsonDup = await keyResDuplicate.json();
   assert(keyJsonDup.data.embeds[0].title.includes('Already Have'), 'Must inform user they already have a key');
 
@@ -159,7 +159,7 @@ async function runTests() {
     data: { name: 'checkin' },
     member: { user: testUser },
   };
-  const checkinRes = await handleDiscordInteraction(checkinInteraction, env, 'https://dnextrouter.workers.dev/discord/interactions');
+  const checkinRes = await handleDiscordInteraction(checkinInteraction, env, 'https://discordlite.workers.dev/discord/interactions');
   const checkinJson = await checkinRes.json();
   assert(checkinJson.data.embeds[0].title.includes('Successful'), 'Checkin must succeed');
 
@@ -172,7 +172,7 @@ async function runTests() {
     data: { name: 'rotatekey' },
     member: { user: testUser },
   };
-  const rotateRes = await handleDiscordInteraction(rotateInteraction, env, 'https://dnextrouter.workers.dev/discord/interactions');
+  const rotateRes = await handleDiscordInteraction(rotateInteraction, env, 'https://discordlite.workers.dev/discord/interactions');
   const rotateJson = await rotateRes.json();
   assert(rotateJson.data.embeds[0].title.includes('Rotated Successfully'), 'Key rotation must succeed');
 

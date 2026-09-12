@@ -1,9 +1,10 @@
-name = "dnextrouter"
+name = "discordlite"
 main = "src/index.js"
 compatibility_date = "2024-09-01"
 compatibility_flags = ["nodejs_compat"]
 
 # KV Namespace Binding
 [[kv_namespaces]]
-binding = "KV"
-id = "98a457510d3e4eb99ac9e88a3d4e4303"
+binding = "KV_BINDING"
+id = "3db79cb5a55b4ef79c146b5ff84fa8e1"
+

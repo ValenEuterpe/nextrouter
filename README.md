@@ -82,15 +82,15 @@ npm run deploy
 
 Once finished, Wrangler will display your live Worker URL:
 ```
-Published dnextrouter (1.23 sec)
-  https://dnextrouter.<your-subdomain>.workers.dev
+Published discordlite (1.23 sec)
+  https://discordlite.<your-subdomain>.workers.dev
 ```
 
 ---
 
 ## 🖥️ Using the DiscordLiteRouter Dashboard
 
-1. Navigate to your Worker URL: `https://dnextrouter.<your-subdomain>.workers.dev/admin` (or `/login`).
+1. Navigate to your Worker URL: `https://discordlite.<your-subdomain>.workers.dev/admin` (or `/login`).
 2. Log in using your `OWNER_USER` and `OWNER_PASS`.
 
 ### Adding a Channel (e.g., "forest" or "op")
@@ -121,23 +121,23 @@ DiscordLiteRouter provides standard OpenAI-compatible endpoints:
 
 ### Standard Base URL (Recommended for Janitor.ai, SillyTavern, LibreChat)
 ```
-https://dnextrouter.<your-subdomain>.workers.dev/v1
+https://discordlite.<your-subdomain>.workers.dev/v1
 ```
 Any client application connecting to this Base URL will automatically call `/chat/completions` or `/models`, and DiscordLiteRouter will seamlessly route requests based on your client API key!
 
 ### Channel-Targeted Base URL (Optional)
 ```
-https://dnextrouter.<your-subdomain>.workers.dev/<channel-prefix>/v1
+https://discordlite.<your-subdomain>.workers.dev/<channel-prefix>/v1
 ```
 
 ### 1. Curl Test (Generic /v1)
 ```bash
 # List exposed models
-curl https://dnextrouter.<your-subdomain>.workers.dev/v1/models \
+curl https://discordlite.<your-subdomain>.workers.dev/v1/models \
   -H "Authorization: Bearer sk-your-client-key"
 
 # Chat Completion
-curl https://dnextrouter.<your-subdomain>.workers.dev/v1/chat/completions \
+curl https://discordlite.<your-subdomain>.workers.dev/v1/chat/completions \
   -H "Authorization: Bearer sk-your-client-key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -153,7 +153,7 @@ from openai import OpenAI
 
 client = OpenAI(
     api_key="sk-your-client-key",
-    base_url="https://dnextrouter.<your-subdomain>.workers.dev/v1"
+    base_url="https://discordlite.<your-subdomain>.workers.dev/v1"
 )
 
 response = client.chat.completions.create(
